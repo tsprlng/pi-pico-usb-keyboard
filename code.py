@@ -8,7 +8,6 @@ import usb_hid
 
 # for this stuff, you have to download it and stick the unzipped adafruit_hid folder under lib/ on the CircuitPython drive
 from adafruit_hid.keyboard import Keyboard
-from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
 from adafruit_hid.keycode import Keycode as KC
 
 from time import sleep
@@ -35,14 +34,6 @@ LYR_EXTRA = 1003
 
 ROW_PINS = [[GP10,GP11,GP12,GP13], [GP21,GP20,GP19,GP18]]  # left rows, then right rows, top is [0]
 COL_PINS = [GP17,GP8,GP16,GP15,GP14,GP9]  # centre is [0], edge is [5]
-
-DEBUG = False
-ROW_DEBUG_CHARS = [
-    '>",.pyfgcrl/',
-    '<aoeuidhtns-',
-    '[;qjkxbmwvz#',
-    '^%W[(~~_W)]^',
-]
 
 # TODO this can't even be used in KCS_NORMAL, as that has to map to actual plain keycodes to be used as dict keys
 def LSFT(v):
