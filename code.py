@@ -85,7 +85,12 @@ KCS_EXTRA = [
 #  define the hardware interface
 #
 
-HID_KB_DEVICE = Keyboard(usb_hid.Device.KEYBOARD)
+HID_KB_DEVICE = None
+while not HID_KB_DEVICE:
+    try:
+        HID_KB_DEVICE = Keyboard(usb_hid.Device.KEYBOARD)
+    except:
+        sleep(0.5)
 
 def make_led(pin):
     led = pwmio.PWMOut(pin, frequency=5000, duty_cycle=0)
