@@ -35,7 +35,6 @@ LYR_EXTRA = 1003
 ROW_PINS = [[GP10,GP11,GP12,GP13], [GP21,GP20,GP19,GP18]]  # left rows, then right rows, top is [0]
 COL_PINS = [GP17,GP8,GP16,GP15,GP14,GP9]  # centre is [0], edge is [5]
 
-# TODO this can't even be used in KCS_NORMAL, as that has to map to actual plain keycodes to be used as dict keys
 def LSFT(v):
     return [KC.LEFT_SHIFT, v]
 
@@ -48,8 +47,7 @@ KCS_DVORAK_EMU = [
     [KC.LEFT_SHIFT, LYR_EXTRA, KC.LEFT_GUI, KC.LEFT_ALT, KC.LEFT_CONTROL, LYR_L,   LYR_R, KC.SPACE, KC.RIGHT_GUI, KC.RIGHT_CONTROL, KC.RIGHT_ALT, KC.RIGHT_SHIFT],
 ]
 
-# normal layer, from which raw keycodes are also taken to identify physically pressed keys
-# TODO define that as a separate thing so that None or LSFT() are allowed in this layer
+# normal layer, the default set of software keys that our hardware keys correspond to
 KCS_NORMAL = [
     [KC.TAB, KC.Q, KC.W, KC.E, KC.R, KC.T,   KC.Y, KC.U, KC.I, KC.O, KC.P, KC.LEFT_BRACKET],
     [KC.BACKSPACE, KC.A, KC.S, KC.D, KC.F, KC.G,   KC.H, KC.J, KC.K, KC.L, KC.SEMICOLON, KC.QUOTE],
@@ -144,7 +142,7 @@ def scan():
 
             # this is what handles the mirroredness
             for col_idx, col_pin in enumerate(reversed(cols) if side_idx == 0 else cols):
-                keycode = KCS_NORMAL[row_idx][x_idx]
+                keycode = row_idx*12 + x_idx
                     # look up "physical" keycode to use as the dict key to track the physical key being pressed
 
                 if keycode != None:
@@ -191,10 +189,10 @@ while True:
     scan()
     led_green.duty_cycle=0
 
-    z = LYR_EXTRA in pressed_keys
-    x = LYR_NAV in pressed_keys
-    r = LYR_R in pressed_keys
-    l = LYR_L in pressed_keys
+    z = 36 + 1 in pressed_keys  # LYR_EXTRA
+    x = 24 + 11 in pressed_keys  # LYR_NAV
+    r = 36 + 6 in pressed_keys  # LYR_R
+    l = 36 + 5 in pressed_keys  # LYR_L
     if z:
         led_front.duty_cycle = 65535
         current_layer_codes = KCS_EXTRA
