@@ -10,6 +10,11 @@ import usb_hid
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode as KC
 
+# for some reason adafruit_hid couldn't be bothered to include these keycodes
+# instead see https://gist.github.com/ekaitz-zarraga/2b25b94b711684ba4e969e5a5723969b
+KX_VOLUP=0xed
+KX_VOLDN=0xee
+
 from time import sleep
 
 # TODO style is all over the place; the excuse today is that i'm not normally a python person really
@@ -70,7 +75,7 @@ KCS_NAVIGATION = [
 ]
 KCS_EXTRA = [
     [None, None, None, None, None, None,   None, None, None, None, None, None],
-    [None, None, None, None, None, None,   None, None, None, None, None, None],
+    [None, None, None, None, None, None,   None, None, KX_VOLDN, KX_VOLUP, None, None],
     [None, None, None, None, None, None,   None, None, None, None, None, LYR_NAV],
     [None, LYR_EXTRA, None, None, None, LYR_L,   LYR_R, None, None, None, None, None],
 ]
