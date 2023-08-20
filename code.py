@@ -5,6 +5,7 @@ from digitalio import DigitalInOut, Direction, DriveMode, Pull
 import pwmio
 
 import usb_hid
+import usb_cdc
 
 # for this stuff, you have to download it and stick the unzipped adafruit_hid folder under lib/ on the CircuitPython drive
 from adafruit_hid.keyboard import Keyboard
@@ -136,7 +137,9 @@ current_layer_codes = KCS_NORMAL
     # keeps track of current layer (changed by LYR_ keys, layer shifters, outside the scan function)
     # this changes the lookup of what keys to press in software, corresponding to each physical key
 
-def scan():
+def scan(hid=True):
+    global pressed_keys, current_layer_codes
+
     for row_idx in range(4):
         x_idx = 0
             # keep track of the actual physical column position, while walking the columns in the mirrored order they are actually laid out in hardware
@@ -164,7 +167,8 @@ def scan():
                                 # (if it's just a single key, wrap it in a list so it doesn't need a different implementation)
                                 for k in (send_keycode if isinstance(send_keycode, list) else [send_keycode]):
                                     if k > 0 and k <= 255:
-                                        HID_KB_DEVICE.press(k)
+                                        if hid:
+                                            HID_KB_DEVICE.press(k)
                                     # else: it's a "special" layer shifter key
                                         # so sticking it in `pressed` is enough for it to get picked up outside this function
 
@@ -184,36 +188,142 @@ def scan():
         #} for side_idx
     #} for row_idx
 
-navLock = False
-    # an idea (needs work) to lock the navigation layer on in place of the "normal" layer
+def keyboard():
+    global pressed_keys, current_layer_codes
+    pressed_keys = {34:{'sent_keycode':[], 'debounce_count':1}}
+    current_layer_codes = KCS_NORMAL
+    
+    navLock = False
+        # an idea (needs work) to lock the navigation layer on in place of the "normal" layer
 
+    while True:
+        led_green.duty_cycle=600
+            # naive attempt to make it obvious if scanning gets stuck.
+            # actually does work, because a crash under CircuitPython blanks out the LED!
+        scan(hid=True)
+        led_green.duty_cycle=0
+
+        z = 36 + 1 in pressed_keys  # LYR_EXTRA
+        x = 24 + 11 in pressed_keys  # LYR_NAV
+        r = 36 + 6 in pressed_keys  # LYR_R
+        l = 36 + 5 in pressed_keys  # LYR_L
+        if z:
+            led_front.duty_cycle = 65535
+            current_layer_codes = KCS_EXTRA
+            if x:
+                navLock = True
+                break
+        elif x or l and r:
+            led_front.duty_cycle = 3000
+            current_layer_codes = KCS_NAVIGATION
+            navLock = False
+        elif l or r:
+            led_front.duty_cycle = 5000
+            current_layer_codes = KCS_SYMBOLS
+            navLock = False
+        else:
+            led_front.duty_cycle = 3000 if navLock else 1000 if pressed_keys else 0
+            current_layer_codes = KCS_NAVIGATION if navLock else KCS_NORMAL
+
+        sleep(0.00005)
+            # :shrug emoji:
+            
+        if current_layer_codes == KCS_EXTRA and pressed_keys.get(25):  # Z
+            break
+
+def steno():
+    current_layer_codes = KCS_NORMAL
+    scans = 0
+    cycle = 600
+    
+    packet = bytearray(6)
+    packet[0] = 128
+    
+    chord_started = False
+    
+    while True:
+        scan(hid=False)
+        scans += 1
+        if scans == 10:
+            scans = 0
+            cycle = 600 if cycle == 0 else 0
+            led_front.duty_cycle = cycle
+        
+        if not pressed_keys:
+            if chord_started:
+                usb_cdc.data.write(packet)
+                packet = bytearray(6)
+                packet[0] = 128
+                usb_cdc.data.write(packet)
+                chord_started = False
+        else:
+            chord_started = True
+
+        if pressed_keys.get(5):
+            packet[2] = packet[2] | 8  # *1
+        if pressed_keys.get(17):
+            packet[2] = packet[2] | 4  # *2
+        if pressed_keys.get(6):
+            packet[3] = packet[3] | 32 # *3
+        if pressed_keys.get(18):
+            packet[3] = packet[3] | 16 # *4
+            
+        if pressed_keys.get(1):
+            packet[1] = packet[1] | 64 # s
+        if pressed_keys.get(2):
+            packet[1] = packet[1] | 16 # t
+        if pressed_keys.get(3):
+            packet[1] = packet[1] | 4  # p
+        if pressed_keys.get(4):
+            packet[1] = packet[1] | 1  # h
+        
+        if pressed_keys.get(13):
+            packet[1] = packet[1] | 32 # s
+        if pressed_keys.get(14):
+            packet[1] = packet[1] | 8  # k
+        if pressed_keys.get(15):
+            packet[1] = packet[1] | 2  # w
+        if pressed_keys.get(16):
+            packet[2] = packet[2] | 64 # r
+
+        if pressed_keys.get(39):
+            packet[2] = packet[2] | 32 # a
+        if pressed_keys.get(40):
+            packet[2] = packet[2] | 16 # o
+
+        if pressed_keys.get(7):
+            packet[3] = packet[3] | 2  # f
+        if pressed_keys.get(8):
+            packet[4] = packet[4] | 64 # p
+        if pressed_keys.get(9):
+            packet[4] = packet[4] | 16 # l
+        if pressed_keys.get(10):
+            packet[4] = packet[4] | 4  # t
+        if pressed_keys.get(11):
+            packet[4] = packet[4] | 1  # d
+        
+        if pressed_keys.get(19):
+            packet[3] = packet[3] | 1  # r
+        if pressed_keys.get(20):
+            packet[4] = packet[4] | 32 # b
+        if pressed_keys.get(21):
+            packet[4] = packet[4] | 8  # g
+        if pressed_keys.get(22):
+            packet[4] = packet[4] | 2  # s
+        if pressed_keys.get(23):
+            packet[5] = packet[5] | 1  # z
+
+        if pressed_keys.get(43):
+            packet[3] = packet[3] | 8  # e
+        if pressed_keys.get(44):
+            packet[3] = packet[3] | 4  # u
+
+        sleep(0.01)
+            
+        #print(pressed_keys)
+        if pressed_keys.get(34):  # forward slash
+            break
+            
 while True:
-    led_green.duty_cycle=600
-        # naive attempt to make it obvious if scanning gets stuck.
-        # actually does work, because a crash under CircuitPython blanks out the LED!
-    scan()
-    led_green.duty_cycle=0
-
-    z = 36 + 1 in pressed_keys  # LYR_EXTRA
-    x = 24 + 11 in pressed_keys  # LYR_NAV
-    r = 36 + 6 in pressed_keys  # LYR_R
-    l = 36 + 5 in pressed_keys  # LYR_L
-    if z:
-        led_front.duty_cycle = 65535
-        current_layer_codes = KCS_EXTRA
-        if x:
-            navLock = True
-    elif x or l and r:
-        led_front.duty_cycle = 3000
-        current_layer_codes = KCS_NAVIGATION
-        navLock = False
-    elif l or r:
-        led_front.duty_cycle = 5000
-        current_layer_codes = KCS_SYMBOLS
-        navLock = False
-    else:
-        led_front.duty_cycle = 3000 if navLock else 1000 if pressed_keys else 0
-        current_layer_codes = KCS_NAVIGATION if navLock else KCS_NORMAL
-
-    sleep(0.00005)
-        # :shrug emoji:
+    keyboard()
+    steno()
