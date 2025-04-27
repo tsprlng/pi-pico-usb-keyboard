@@ -8,3 +8,5 @@ This is an implementation of a "40%" layout -- 24 keys per hand -- with extra "l
 Here is a photo of the particular keyboard design I'm talking about, just so you get the idea.
 
 ![Photo of keyboard](https://www.tspurling.co.uk/computer-keyboards/build-2022.jpg)
+
+See also: [same thing in Rust](https://github.com/tsprlng/pi-pico-usb-keyboard-rust)
