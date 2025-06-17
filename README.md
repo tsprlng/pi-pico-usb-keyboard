@@ -10,3 +10,8 @@ Here is a photo of the particular keyboard design I'm talking about, just so you
 ![Photo of keyboard](https://www.tspurling.co.uk/computer-keyboards/build-2022.jpg)
 
 See also: [same thing in Rust](https://github.com/tsprlng/pi-pico-usb-keyboard-rust)
+
+Keymap
+------
+
+See my [interactive illustration](https://www.tspurling.co.uk/keymap/) for a brief explanation of the 40% keymap I use.
